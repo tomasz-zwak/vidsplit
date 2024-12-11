@@ -1,32 +1,78 @@
+// @deno-types="@types/react"
 import { useState } from "react";
 import "./App.css";
 
+function downloadFileJS(data: Blob, type: string, name: string) {
+  const blob = new Blob([data], { type });
+  const url = globalThis.URL.createObjectURL(blob);
+  downloadURI(url, name);
+  globalThis.URL.revokeObjectURL(url);
+}
+
+function downloadURI(uri: string, name: string) {
+  const link = document.createElement("a");
+  link.download = name;
+  link.href = uri;
+  link.click();
+}
+
 function App() {
-  const [count, setCount] = useState(0);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      setSelectedFile(file);
+      console.log("Selected file:", file.name);
+    }
+  };
+
+  const onSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const formData = new FormData();
+    console.log(selectedFile);
+
+    if (!selectedFile) return;
+
+    const file = new File([selectedFile], selectedFile.name, {
+      type: selectedFile.type,
+    });
+
+    formData.set("file", file);
+
+    fetch("/upload", {
+      method: "POST",
+      type: "multipart/form-data",
+      body: formData,
+    })
+      .then((response) => response.blob())
+      .then((data) => {
+        downloadFileJS(
+          data,
+          "audio/mp3",
+          selectedFile.name.replace(/mp4$/, "mp3")
+        );
+      });
+  };
 
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src="/vite.svg" className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src="/react.svg" className="logo react" alt="React logo" />
-        </a>
+    <div>
+      <div className="app-container">
+        <form method="post" encType="multipart/form-data" onSubmit={onSubmit}>
+          <input type="file" onChange={handleFileChange} accept="video/*" />
+          {selectedFile && <button onClick={() => {}}>get audio</button>}
+        </form>
+        {selectedFile && <p>Selected file: {selectedFile.name}</p>}
       </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count: number) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
+
+      {selectedFile && (
+        <div>
+          <video controls>
+            <source src={URL.createObjectURL(selectedFile)} type="video/mp4" />
+          </video>
+        </div>
+      )}
+    </div>
   );
 }
 

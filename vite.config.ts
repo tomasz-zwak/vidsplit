@@ -10,10 +10,7 @@ export default defineConfig({
   server: {
     port: 3000,
   },
-  plugins: [
-    react(),
-    deno(),
-  ],
+  plugins: [react(), deno()],
   optimizeDeps: {
     include: ["react/jsx-runtime"],
   },
