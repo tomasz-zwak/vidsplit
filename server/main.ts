@@ -15,6 +15,8 @@ router.post("/upload", async (context) => {
   const videoPath = `./uploads/${uuid}_${video.name}`;
   const audioPath = `./uploads/${uuid}_${video.name.replace(/mp4$/, "mp3")}`;
 
+  console.log("received file", video.name);
+
   Deno.writeFileSync(videoPath, new Uint8Array(await video.arrayBuffer()));
 
   const command = new Deno.Command("ffmpeg", {
@@ -27,8 +29,11 @@ router.post("/upload", async (context) => {
       audioPath,
     ],
   });
+  console.log("converting video to mp3", video.name, "to", audioPath);
 
   const cmd = command.outputSync();
+
+  console.log("conversion finished", cmd.code, cmd.signal, cmd.success);
 
   if (!cmd.success) throw new Error("command fail");
 
@@ -48,5 +53,5 @@ app.use(routeStaticFilesFrom([
 
 if (import.meta.main) {
   console.log("Server listening on port http://localhost:8000");
-  await app.listen({ port: 8000 });
+  await app.listen({ port: 80 });
 }
